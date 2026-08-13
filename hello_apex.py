@@ -24,7 +24,7 @@ def check_vehicle_status(vel, temp):
 
 
 # =========================================================
-# SESSION FILENAME
+# SESSION FILE MANAGEMENT
 # =========================================================
 
 def get_next_session_filename():
@@ -44,10 +44,10 @@ def get_next_session_filename():
 
 
 # =========================================================
-# GET SAVED TELEMETRY SESSIONS
+# SHOW AVAILABLE TELEMETRY SESSIONS
 # =========================================================
 
-def get_saved_sessions():
+def get_available_sessions():
 
     sessions = []
 
@@ -81,7 +81,9 @@ def detect_anomalies(velocities, times):
 
     for index, velocity in enumerate(velocities):
 
-        if abs(velocity - mean_velocity) > 2 * std_velocity:
+        if abs(
+            velocity - mean_velocity
+        ) > 2 * std_velocity:
 
             anomaly_times.append(times[index])
             anomaly_velocities.append(velocity)
@@ -98,6 +100,243 @@ def detect_anomalies(velocities, times):
 
 
 # =========================================================
+# TEMPERATURE TREND DETECTION
+# =========================================================
+
+def detect_temperature_trend(temperatures):
+
+    increasing_count = 0
+    decreasing_count = 0
+    stable_count = 0
+
+    tolerance = 2
+
+    for index in range(
+        1,
+        len(temperatures)
+    ):
+
+        previous = temperatures[index - 1]
+        current = temperatures[index]
+
+        if current > previous + tolerance:
+
+            increasing_count += 1
+
+        elif current < previous - tolerance:
+
+            decreasing_count += 1
+
+        else:
+
+            stable_count += 1
+
+    if (
+        increasing_count > decreasing_count
+        and increasing_count > stable_count
+    ):
+
+        return "INCREASING"
+
+    elif (
+        decreasing_count > increasing_count
+        and decreasing_count > stable_count
+    ):
+
+        return "DECREASING"
+
+    elif (
+        stable_count > increasing_count
+        and stable_count > decreasing_count
+    ):
+
+        return "STABLE"
+
+    else:
+
+        return "FLUCTUATING"
+
+
+# =========================================================
+# VELOCITY TREND DETECTION
+# =========================================================
+
+def detect_velocity_trend(velocities):
+
+    increasing_count = 0
+    decreasing_count = 0
+    stable_count = 0
+
+    tolerance = 2
+
+    for index in range(
+        1,
+        len(velocities)
+    ):
+
+        previous = velocities[index - 1]
+        current = velocities[index]
+
+        if current > previous + tolerance:
+
+            increasing_count += 1
+
+        elif current < previous - tolerance:
+
+            decreasing_count += 1
+
+        else:
+
+            stable_count += 1
+
+    if (
+        increasing_count > decreasing_count
+        and increasing_count > stable_count
+    ):
+
+        return "INCREASING"
+
+    elif (
+        decreasing_count > increasing_count
+        and decreasing_count > stable_count
+    ):
+
+        return "DECREASING"
+
+    elif (
+        stable_count > increasing_count
+        and stable_count > decreasing_count
+    ):
+
+        return "STABLE"
+
+    else:
+
+        return "FLUCTUATING"
+
+
+# =========================================================
+# RISK SCORE CALCULATION
+# =========================================================
+
+def calculate_risk_score(
+    critical_count,
+    overheating_count,
+    speed_count,
+    anomaly_count
+):
+
+    risk_score = 0
+
+    risk_score += critical_count * 30
+    risk_score += overheating_count * 20
+    risk_score += speed_count * 10
+    risk_score += anomaly_count * 15
+
+    if risk_score > 100:
+
+        risk_score = 100
+
+    return risk_score
+
+
+# =========================================================
+# VEHICLE CONDITION ASSESSMENT
+# =========================================================
+
+def assess_vehicle_condition(
+    risk_score,
+    temperature_trend,
+    velocity_trend
+):
+
+    if risk_score <= 20:
+
+        condition = "HEALTHY"
+
+    elif risk_score <= 50:
+
+        condition = "CAUTION"
+
+    elif risk_score <= 75:
+
+        condition = "WARNING"
+
+    else:
+
+        condition = "CRITICAL"
+
+    if (
+        temperature_trend == "INCREASING"
+        and condition == "HEALTHY"
+    ):
+
+        condition = "CAUTION"
+
+    elif (
+        temperature_trend == "INCREASING"
+        and condition == "CAUTION"
+    ):
+
+        condition = "WARNING"
+
+    elif (
+        temperature_trend == "FLUCTUATING"
+        and condition == "HEALTHY"
+    ):
+
+        condition = "CAUTION"
+
+    if (
+        temperature_trend == "INCREASING"
+        and velocity_trend == "INCREASING"
+        and condition == "WARNING"
+    ):
+
+        condition = "CRITICAL"
+
+    return condition
+
+
+# =========================================================
+# VEHICLE RECOMMENDATION
+# =========================================================
+
+def generate_recommendation(condition):
+
+    if condition == "HEALTHY":
+
+        return (
+            "Vehicle operating normally. "
+            "Continue monitoring."
+        )
+
+    elif condition == "CAUTION":
+
+        return (
+            "Minor irregularities or changing "
+            "vehicle conditions detected. "
+            "Monitor the vehicle closely."
+        )
+
+    elif condition == "WARNING":
+
+        return (
+            "Multiple risk factors or worsening "
+            "trends detected. Reduce operating "
+            "stress and inspect the vehicle."
+        )
+
+    else:
+
+        return (
+            "Critical operating condition detected. "
+            "Stop the vehicle safely and inspect "
+            "immediately."
+        )
+
+
+# =========================================================
 # LOAD TELEMETRY FROM CSV
 # =========================================================
 
@@ -108,7 +347,11 @@ def load_telemetry(filename):
     temperatures = []
     statuses = []
 
-    with open(filename, "r", newline="") as file:
+    with open(
+        filename,
+        "r",
+        newline=""
+    ) as file:
 
         reader = csv.reader(file)
 
@@ -143,21 +386,23 @@ def run_new_session():
     time = 0
 
     end_time = int(
-        input("What's the total monitoring time (s)? ")
+        input(
+            "What's the total monitoring time (s)? "
+        )
     )
-
-    # -----------------------------------------------------
-    # TELEMETRY COLLECTION
-    # -----------------------------------------------------
 
     while time <= end_time:
 
         temp = float(
-            input("What's the current temperature (°C)? ")
+            input(
+                "What's the current temperature (°C)? "
+            )
         )
 
         vel = float(
-            input("What's the current velocity (m/s)? ")
+            input(
+                "What's the current velocity (m/s)? "
+            )
         )
 
         status = check_vehicle_status(
@@ -169,10 +414,6 @@ def run_new_session():
         print("Velocity:", vel, "m/s")
         print("Temperature:", temp, "°C")
         print("Status:", status)
-
-        # -------------------------------------------------
-        # WARNING SYSTEM
-        # -------------------------------------------------
 
         if status == "CRITICAL":
 
@@ -199,10 +440,6 @@ def run_new_session():
                 "Vehicle operating normally."
             )
 
-        # -------------------------------------------------
-        # STORE TELEMETRY
-        # -------------------------------------------------
-
         times.append(time)
         velocities.append(vel)
         temperatures.append(temp)
@@ -210,9 +447,10 @@ def run_new_session():
 
         time += 1
 
-    # -----------------------------------------------------
-    # SAVE NEW SESSION TO CSV
-    # -----------------------------------------------------
+
+    # =====================================================
+    # SAVE TELEMETRY SESSION
+    # =====================================================
 
     filename = get_next_session_filename()
 
@@ -231,7 +469,12 @@ def run_new_session():
             "Status"
         ])
 
-        for time, velocity, temperature, status in zip(
+        for (
+            time,
+            velocity,
+            temperature,
+            status
+        ) in zip(
             times,
             velocities,
             temperatures,
@@ -270,11 +513,15 @@ def analyze_telemetry(
 ):
 
     velocity_data = np.array(velocities)
-    temperature_data = np.array(temperatures)
 
-    # -----------------------------------------------------
+    temperature_data = np.array(
+        temperatures
+    )
+
+
+    # =====================================================
     # VELOCITY ANALYSIS
-    # -----------------------------------------------------
+    # =====================================================
 
     (
         anomaly_times,
@@ -288,9 +535,10 @@ def analyze_telemetry(
         times
     )
 
-    # -----------------------------------------------------
+
+    # =====================================================
     # TEMPERATURE ANALYSIS
-    # -----------------------------------------------------
+    # =====================================================
 
     mean_temperature = np.mean(
         temperature_data
@@ -300,9 +548,23 @@ def analyze_telemetry(
         temperature_data
     )
 
-    # -----------------------------------------------------
+
+    # =====================================================
+    # TREND ANALYSIS
+    # =====================================================
+
+    temperature_trend = detect_temperature_trend(
+        temperatures
+    )
+
+    velocity_trend = detect_velocity_trend(
+        velocities
+    )
+
+
+    # =====================================================
     # EVENT COUNTS
-    # -----------------------------------------------------
+    # =====================================================
 
     critical_count = statuses.count(
         "CRITICAL"
@@ -320,9 +582,32 @@ def analyze_telemetry(
         "NORMAL"
     )
 
-    # -----------------------------------------------------
-    # TELEMETRY REPORT
-    # -----------------------------------------------------
+
+    # =====================================================
+    # VEHICLE RISK ASSESSMENT
+    # =====================================================
+
+    risk_score = calculate_risk_score(
+        critical_count,
+        overheating_count,
+        speed_count,
+        anomaly_count
+    )
+
+    condition = assess_vehicle_condition(
+        risk_score,
+        temperature_trend,
+        velocity_trend
+    )
+
+    recommendation = generate_recommendation(
+        condition
+    )
+
+
+    # =====================================================
+    # APEX TELEMETRY REPORT
+    # =====================================================
 
     print(
         "\n========== APEX TELEMETRY REPORT =========="
@@ -330,10 +615,26 @@ def analyze_telemetry(
 
     print("\n--- Vehicle Events ---")
 
-    print("Critical Events:", critical_count)
-    print("Overheating Events:", overheating_count)
-    print("Speed-limit Events:", speed_count)
-    print("Normal Events:", normal_count)
+    print(
+        "Critical Events:",
+        critical_count
+    )
+
+    print(
+        "Overheating Events:",
+        overheating_count
+    )
+
+    print(
+        "Speed-limit Events:",
+        speed_count
+    )
+
+    print(
+        "Normal Events:",
+        normal_count
+    )
+
 
     print("\n--- Velocity Analysis ---")
 
@@ -354,6 +655,12 @@ def analyze_telemetry(
         anomaly_count
     )
 
+    print(
+        "Velocity trend:",
+        velocity_trend
+    )
+
+
     print("\n--- Temperature Analysis ---")
 
     print(
@@ -368,6 +675,12 @@ def analyze_telemetry(
         "°C"
     )
 
+    print(
+        "Temperature trend:",
+        temperature_trend
+    )
+
+
     print("\n--- Anomaly Data ---")
 
     print(
@@ -380,9 +693,58 @@ def analyze_telemetry(
         anomaly_velocities
     )
 
-    # -----------------------------------------------------
+
+    # =====================================================
+    # VEHICLE HEALTH REPORT
+    # =====================================================
+
+    print(
+        "\n========== VEHICLE HEALTH REPORT =========="
+    )
+
+    print(
+        "Risk Score:",
+        risk_score
+    )
+
+    print(
+        "Overall Condition:",
+        condition
+    )
+
+    print(
+        "Recommendation:",
+        recommendation
+    )
+
+
+    # =====================================================
+    # RISK SCORE VISUALIZATION
+    # =====================================================
+
+    plt.figure()
+
+    plt.bar(
+        ["Risk Score"],
+        [risk_score]
+    )
+
+    plt.ylim(0, 100)
+
+    plt.ylabel("Risk Score")
+
+    plt.title(
+        "APEX — Vehicle Risk Assessment"
+    )
+
+    plt.grid(True)
+
+    plt.show()
+
+
+    # =====================================================
     # VELOCITY GRAPH
-    # -----------------------------------------------------
+    # =====================================================
 
     plt.figure()
 
@@ -413,9 +775,10 @@ def analyze_telemetry(
 
     plt.show()
 
-    # -----------------------------------------------------
+
+    # =====================================================
     # TEMPERATURE GRAPH
-    # -----------------------------------------------------
+    # =====================================================
 
     plt.figure()
 
@@ -448,7 +811,9 @@ print("\n========== APEX ==========")
 print("1. Run New Telemetry Session")
 print("2. Analyze Previous Telemetry")
 
-choice = input("Select an option: ")
+choice = input(
+    "Select an option: "
+)
 
 
 # =========================================================
@@ -472,22 +837,28 @@ if choice == "1":
         statuses
     )
 
+
 # =========================================================
 # OPTION 2 — PREVIOUS SESSION
 # =========================================================
+
 elif choice == "2":
 
-    sessions = get_saved_sessions()
+    sessions = get_available_sessions()
 
     if len(sessions) == 0:
 
-        print("\nNo saved telemetry sessions found.")
+        print(
+            "\nNo telemetry sessions found."
+        )
 
     else:
 
-        print("\n========== SAVED TELEMETRY SESSIONS ==========")
+        print(
+            "\n========== AVAILABLE TELEMETRY SESSIONS =========="
+        )
 
-        for index, filename in enumerate(
+        for index, session in enumerate(
             sessions,
             start=1
         ):
@@ -495,7 +866,7 @@ elif choice == "2":
             print(
                 index,
                 ".",
-                filename
+                session
             )
 
         session_choice = int(
@@ -514,7 +885,7 @@ elif choice == "2":
             ]
 
             print(
-                "\nLoading:",
+                "\nLoading telemetry:",
                 filename
             )
 
@@ -538,5 +909,14 @@ elif choice == "2":
         else:
 
             print(
-                "\nInvalid session number."
+                "Invalid session number."
             )
+
+
+# =========================================================
+# INVALID OPTION
+# =========================================================
+
+else:
+
+    print("Invalid choice.")
